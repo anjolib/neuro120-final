@@ -27,8 +27,8 @@ def dA_dt(t: float, A: float, p: Params = params, scn_on: bool = True) -> float:
     Returns:
         float: rate of change of AgRP activity
     """
-    g = inputs.ghrelin(t, "h", False)
-    l = inputs.leptin(t, False)
+    g = (inputs.ghrelin(t, "h", True) + 1) / 2
+    l = (inputs.leptin(t, True) + 1) / 2
     scn_drive     = p.w_S * inputs.scn(t) if scn_on else 0.0
     ghrelin_drive = p.w_G * g / (p.K_G + g)
     leptin_drive  = p.w_L * l / (p.K_L + l)
