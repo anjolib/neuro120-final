@@ -27,9 +27,11 @@ def dA_dt(t: float, A: float, p: Params = params, scn_on: bool = True) -> float:
     Returns:
         float: rate of change of AgRP activity
     """
+    g = inputs.ghrelin(t, "h", False)
+    l = inputs.leptin(t, False)
     scn_drive     = p.w_S * inputs.scn(t) if scn_on else 0.0
-    ghrelin_drive = p.w_G * inputs.ghrelin(t, "h", False) / (p.K_G + inputs.ghrelin(t, "h", False))
-    leptin_drive  = p.w_L * inputs.leptin(t, False) / (p.K_L + inputs.leptin(t, False))
+    ghrelin_drive = p.w_G * g / (p.K_G + g)
+    leptin_drive  = p.w_L * l / (p.K_L + l)
 
     return -p.k_A * A + scn_drive + ghrelin_drive - leptin_drive + p.b
 
@@ -63,3 +65,5 @@ def euler_simulate(
     for i in range(n - 1):
         A[i + 1] = A[i] + dt * dA_dt(t[i], A[i], p, scn_on)
     return t, A
+
+
