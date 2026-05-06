@@ -15,19 +15,18 @@ from .hormones import (
 )
 
 Y0 = [
-    -40.0, -60.0, -60.0, -60.0, # V, A, P, L
-    0.0, 0.0, 0.0, 0.0,         # aKV, aKA, aKP, aKL
-    0.0, 0.0, 0.0, 0.0,         # aGLUP, aGLUV, GABAA, GABAL
-    0.0, 1.0,                   # aOrexina, Morexina
-    0.0, 0.0, 1.38,             # alphaMSH, AgRP, AMC4R
-    0.0, 0.01,                  # GI1, GI2
-    670.0, 79.0, 22.0,          # H1, IN, LP
-    0.11, 0.6, 0.6,             # AINSR, AGHSR, ALEPR
+    -40.0, -60.0, -60.0, -60.0, -60.0,
+    0.0, 0.0, 0.0, 0.0, 0.0,
+    0.0, 0.0, 0.0, 0.0,
+    0.0, 1.0,
+    0.0, 0.0, 1.38,
+    0.0, 0.01, 670.0, 79.0, 22.0,
+    0.11, 0.6, 0.6,
 ]
 
 STATE_NAMES = [
-    "V", "A", "P", "L",
-    "aKV", "aKA", "aKP", "aKL",
+    "V", "A", "P", "L", "S",
+    "aKV", "aKA", "aKP", "aKL", "aKS",
     "aGLUP", "aGLUV", "GABAA", "GABAL",
     "aOrexina", "Morexina",
     "alphaMSH", "AgRP", "AMC4R",
@@ -37,8 +36,8 @@ STATE_NAMES = [
 
 def make_ode(food_fn: Callable[[float], float]):
     def rhs(t: float, y: list) -> list:
-        (V, A, P, L,
-         aKV, aKA, aKP, aKL,
+        (V, A, P, L, S,
+         aKV, aKA, aKP, aKL, aKS,
          aGLUP, aGLUV, GABAA, GABAL,
          aOrexina, Morexina,
          aMSH, AgRP, AMC4R,
@@ -76,10 +75,16 @@ def make_ode(food_fn: Callable[[float], float]):
               - I_MC4R(L, AMC4R)
               + I_circadian(t))
 
+        dS = (-I_leak(S)
+              - I_Na(aNa_inf(S), S)
+              - I_K(aKS, S)
+              - I_circadian(t))
+
         daKV = (aK_inf(V) - aKV) / p.tauK
         daKA = (aK_inf(A) - aKA) / p.tauK
         daKP = (aK_inf(P) - aKP) / p.tauK
         daKL = (aK_inf(L) - aKL) / p.tauK
+        daKS = (aK_inf(S) - aKS) / p.tauK
 
         daGLUP = (aGLU_inf(P) - aGLUP) / p.tauGLU
         daGLUV = (aGLU_inf(V) - aGLUV) / p.tauGLU
@@ -107,8 +112,8 @@ def make_ode(food_fn: Callable[[float], float]):
         dALEPR = Ra_LEPR(LP) / p.tauact_LEPR - ALEPR / p.tauinac_LEPR
 
         return [
-            dV, dA, dP, dL,
-            daKV, daKA, daKP, daKL,
+            dV, dA, dP, dL, dS,
+            daKV, daKA, daKP, daKL, daKS,
             daGLUP, daGLUV, dGABAA, dGABAL,
             daOrexina, dMorexina,
             daMSH, dAgRP, dAMC4R,
