@@ -59,7 +59,7 @@ def plot_voltages(res: SimResult, hours: float = 24.0) -> plt.Figure:
 def plot_hormones(res: SimResult) -> plt.Figure:
     """Glucose, insulin, ghrelin, and leptin over 72 h."""
     specs = [
-        (res.GL2, "Plasma glucose (mmol/L)", "darkgreen"),
+        (res.GI2, "Plasma glucose (mmol/L)", "darkgreen"),
         (res.IN,  "Insulin (pM)",            "steelblue"),
         (res.H1,  "Ghrelin (pg/mL)",         "tomato"),
         (res.LP,  "Leptin plasma (ng/mL)",   "purple"),
