@@ -79,12 +79,14 @@ def make_ode(food_fn: Callable[[float], float]):
         dS = (-I_leak(S)
               - I_Na(aNa_inf(S), S)
               - I_K(aKS, S)
-              - I_circadian(t))
+              - I_circadian(t)
+              + p.I_tonic_S)
 
         dD = (-I_leak(D)
               - I_Na(aNa_inf(D), D)
               - I_K(aKD, D)
-              - I_GABA(D, GABAS))
+              - I_GABA(D, GABAS)
+              + p.I_tonic_D)
 
         daKV = (aK_inf(V) - aKV) / p.tauK
         daKA = (aK_inf(A) - aKA) / p.tauK
