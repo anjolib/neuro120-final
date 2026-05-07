@@ -32,6 +32,7 @@ class SimResult:
     # Ionotropic synaptic gating
     aGLUP: np.ndarray = field(init=False)
     aGLUV: np.ndarray = field(init=False)
+    aGLUD: np.ndarray = field(init=False)
     GABAA: np.ndarray = field(init=False)
     GABAL: np.ndarray = field(init=False)
     GABAS: np.ndarray = field(init=False)

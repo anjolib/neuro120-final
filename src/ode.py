@@ -17,7 +17,7 @@ from .hormones import (
 Y0 = [
     -40.0, -60.0, -60.0, -60.0, -60.0, -60.0,
     0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-    0.0, 0.0, 0.0, 0.0, 0.0,
+    0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
     0.0, 1.0,
     0.0, 0.0, 1.38,
     0.0, 0.01, 670.0, 79.0, 22.0,
@@ -27,7 +27,7 @@ Y0 = [
 STATE_NAMES = [
     "V", "A", "P", "L", "S", "D",
     "aKV", "aKA", "aKP", "aKL", "aKS", "aKD",
-    "aGLUP", "aGLUV", "GABAA", "GABAL", "GABAS",
+    "aGLUP", "aGLUV", "GABAA", "GABAL", "GABAS", "aGLUD",
     "aOrexina", "Morexina",
     "alphaMSH", "AgRP", "AMC4R",
     "GI1", "GI2", "H1", "IN", "LP",
@@ -38,7 +38,7 @@ def make_ode(food_fn: Callable[[float], float]):
     def rhs(t: float, y: list) -> list:
         (V, A, P, L, S, D,
          aKV, aKA, aKP, aKL, aKS, aKD,
-         aGLUP, aGLUV, GABAA, GABAL, GABAS,
+         aGLUP, aGLUV, GABAA, GABAL, GABAS, aGLUD,
          aOrexina, Morexina,
          aMSH, AgRP, AMC4R,
          GI1, GI2, GH, IN, LP,
@@ -59,7 +59,8 @@ def make_ode(food_fn: Callable[[float], float]):
               - I_OREXIN(A, aOrexina)
               - I_GHSR(A, AGHSR, -10.0)
               - I_LEPR(A, ALEPR, -90.0)
-              - I_INSR(A, AINSR, -90.0, p.gINSRA))
+              - I_INSR(A, AINSR, -90.0, p.gINSRA)
+              - I_GLU(A, aGLUD))
 
         dP = (-I_leak(P)
               - I_Na(aNa_inf(P), P)
@@ -94,6 +95,7 @@ def make_ode(food_fn: Callable[[float], float]):
 
         daGLUP = (aGLU_inf(P) - aGLUP) / p.tauGLU
         daGLUV = (aGLU_inf(V) - aGLUV) / p.tauGLU
+        daGLUD = (aGLU_inf(D) - aGLUD) / p.tauGLU
         dGABAA = (aGLU_inf(A) - GABAA) / p.tauGABA
         dGABAL = (aGLU_inf(L) - GABAL) / p.tauGABA
         dGABAS = (aGLU_inf(S) - GABAS) / p.tauGABA
@@ -121,7 +123,7 @@ def make_ode(food_fn: Callable[[float], float]):
         return [
             dV, dA, dP, dL, dS, dD,
             daKV, daKA, daKP, daKL, daKS, daKD,
-            daGLUP, daGLUV, dGABAA, dGABAL, dGABAS,
+            daGLUP, daGLUV, dGABAA, dGABAL, dGABAS, daGLUD,
             daOrexina, dMorexina,
             daMSH, dAgRP, dAMC4R,
             dGI1, dGI2, dGH, dIN, dLP,
