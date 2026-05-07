@@ -1,5 +1,7 @@
 from .params import gen, break_, lun, din
 
+def GF(t: float, r: float) -> float:
+    return r * 5416.0 / 86400.0
 
 def TRE(t: float, r: float) -> float:
     windows = [
@@ -41,6 +43,7 @@ def IFI(t: float, r: float) -> float:
     return 0.0
 
 SCHEDULES = {
+    "GF": GF,
     "TRE": TRE,
     "CD":  CD,
     "IFI": IFI,
