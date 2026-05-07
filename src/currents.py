@@ -19,6 +19,9 @@ def aK_inf(V):
 def I_GLU(V, aGLU):
     return p.gGLU * aGLU * (V - p.EGLU)
 
+def I_GLU_Trh(V, aGLU):
+    return p.gGLU_Trh * aGLU * (V - p.EGLU)
+
 def aGLU_inf(V):
     return 1.0 / (1.0 + np.exp(-p.Ssyn * (V - p.Vspike)))
 
@@ -50,6 +53,15 @@ def I_circadian(t, wc=0.000073, Ac=0.045):
         + 0.001 * np.sin(5 * wc * t - phi)
         + 1.0
     )
+
+def I_SCN(t):
+    return 0.045 * np.cos(2.44009422e-01 * (t / 3600.0) - 9.08555848e-01)
+
+def I_tonic_SCN(t):
+    CT = (t / 3600.0) % 24.0
+    cfos = 497.67 * np.cos(0.2440 * CT - 0.9086) + 869.59
+    norm = (cfos - 371.92) / (1367.26 - 371.92)
+    return 0.3 + norm * (1.1 - 0.3)
 
 def Ra_MC4R(aMSH, AgRP):
     numer = aMSH + p.Talpha * (1.0 + (AgRP / p.TA))

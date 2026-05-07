@@ -36,6 +36,7 @@ def plot_voltages(res: SimResult, hours: float = 24.0) -> plt.Figure:
     ]
 
     specs = [
+        (res.S[mask], "SVZ (S)", "mediumpurple"),
         (res.V[mask], "PVH  (V)",  "steelblue"),
         (res.A[mask], "AgRP (A)",  "tomato"),
         (res.P[mask], "POMC (P)",  "seagreen"),
@@ -59,7 +60,7 @@ def plot_voltages(res: SimResult, hours: float = 24.0) -> plt.Figure:
 def plot_hormones(res: SimResult) -> plt.Figure:
     """Glucose, insulin, ghrelin, and leptin over 72 h."""
     specs = [
-        (res.GL2, "Plasma glucose (mmol/L)", "darkgreen"),
+        (res.GI2, "Plasma glucose (mmol/L)", "darkgreen"),
         (res.IN,  "Insulin (pM)",            "steelblue"),
         (res.H1,  "Ghrelin (pg/mL)",         "tomato"),
         (res.LP,  "Leptin plasma (ng/mL)",   "purple"),
@@ -161,13 +162,14 @@ def plot_spike_counts(
         return counts
 
     specs = [
+        (_count(res.S),"SVZ", "mediumpurple"),
         (_count(res.V), "PVH",  "steelblue"),
         (_count(res.A), "AgRP", "tomato"),
         (_count(res.P), "POMC", "seagreen"),
         (_count(res.L), "LHA",  "darkorange"),
     ]
 
-    fig, axes = plt.subplots(4, 1, figsize=(12, 7), sharex=True)
+    fig, axes = plt.subplots(5, 1, figsize=(12, 7), sharex=True)
     fig.suptitle(f"Firing rate (spikes / {window_h*60:.0f}-min window) – first {hours:.0f} h",
                  fontsize=12)
 
