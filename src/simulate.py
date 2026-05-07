@@ -18,12 +18,14 @@ class SimResult:
     A: np.ndarray = field(init=False)
     P: np.ndarray = field(init=False)
     L: np.ndarray = field(init=False)
+    S: np.ndarray = field(init=False)
 
     # K-channel gating
     aKV: np.ndarray = field(init=False)
     aKA: np.ndarray = field(init=False)
     aKP: np.ndarray = field(init=False)
     aKL: np.ndarray = field(init=False)
+    aKS: np.ndarray = field(init=False)
 
     # Ionotropic synaptic gating
     aGLUP: np.ndarray = field(init=False)
