@@ -15,9 +15,9 @@ from .hormones import (
 )
 
 Y0 = [
-    -40.0, -60.0, -60.0, -60.0, -60.0,
+    -40.0, -60.0, -60.0, -60.0, -60.0, -60.0,
+    0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
     0.0, 0.0, 0.0, 0.0, 0.0,
-    0.0, 0.0, 0.0, 0.0,
     0.0, 1.0,
     0.0, 0.0, 1.38,
     0.0, 0.01, 670.0, 79.0, 22.0,
@@ -25,9 +25,9 @@ Y0 = [
 ]
 
 STATE_NAMES = [
-    "V", "A", "P", "L", "S",
-    "aKV", "aKA", "aKP", "aKL", "aKS",
-    "aGLUP", "aGLUV", "GABAA", "GABAL",
+    "V", "A", "P", "L", "S", "D",
+    "aKV", "aKA", "aKP", "aKL", "aKS", "aKD",
+    "aGLUP", "aGLUV", "GABAA", "GABAL", "GABAS",
     "aOrexina", "Morexina",
     "alphaMSH", "AgRP", "AMC4R",
     "GI1", "GI2", "H1", "IN", "LP",
@@ -36,9 +36,9 @@ STATE_NAMES = [
 
 def make_ode(food_fn: Callable[[float], float]):
     def rhs(t: float, y: list) -> list:
-        (V, A, P, L, S,
-         aKV, aKA, aKP, aKL, aKS,
-         aGLUP, aGLUV, GABAA, GABAL,
+        (V, A, P, L, S, D,
+         aKV, aKA, aKP, aKL, aKS, aKD,
+         aGLUP, aGLUV, GABAA, GABAL, GABAS,
          aOrexina, Morexina,
          aMSH, AgRP, AMC4R,
          GI1, GI2, GH, IN, LP,
@@ -80,16 +80,23 @@ def make_ode(food_fn: Callable[[float], float]):
               - I_K(aKS, S)
               - I_circadian(t))
 
+        dD = (-I_leak(D)
+              - I_Na(aNa_inf(D), D)
+              - I_K(aKD, D)
+              - I_GABA(D, GABAS))
+
         daKV = (aK_inf(V) - aKV) / p.tauK
         daKA = (aK_inf(A) - aKA) / p.tauK
         daKP = (aK_inf(P) - aKP) / p.tauK
         daKL = (aK_inf(L) - aKL) / p.tauK
         daKS = (aK_inf(S) - aKS) / p.tauK
+        daKD = (aK_inf(D) - aKD) / p.tauK
 
         daGLUP = (aGLU_inf(P) - aGLUP) / p.tauGLU
         daGLUV = (aGLU_inf(V) - aGLUV) / p.tauGLU
         dGABAA = (aGLU_inf(A) - GABAA) / p.tauGABA
         dGABAL = (aGLU_inf(L) - GABAL) / p.tauGABA
+        dGABAS = (aGLU_inf(S) - GABAS) / p.tauGABA
 
         s_L = aGLU_inf(L)
         daOrexina = (s_L * Morexina - aOrexina) / p.tauOREXIN
@@ -112,9 +119,9 @@ def make_ode(food_fn: Callable[[float], float]):
         dALEPR = Ra_LEPR(LP) / p.tauact_LEPR - ALEPR / p.tauinac_LEPR
 
         return [
-            dV, dA, dP, dL, dS,
-            daKV, daKA, daKP, daKL, daKS,
-            daGLUP, daGLUV, dGABAA, dGABAL,
+            dV, dA, dP, dL, dS, dD,
+            daKV, daKA, daKP, daKL, daKS, daKD,
+            daGLUP, daGLUV, dGABAA, dGABAL, dGABAS,
             daOrexina, dMorexina,
             daMSH, dAgRP, dAMC4R,
             dGI1, dGI2, dGH, dIN, dLP,
