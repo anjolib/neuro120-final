@@ -2,10 +2,10 @@ from typing import Callable
 from . import params as p
 from .currents import (
     I_leak, I_Na, aNa_inf, I_K, aK_inf,
-    aGLU_inf, I_GLU, I_GABA,
+    aGLU_inf, I_GLU, I_GABA, I_GLU_Trh,
     I_OREXIN, I_MC4R,
     I_INSR, I_GHSR, I_LEPR,
-    I_circadian,
+    I_circadian, I_SCN, I_tonic_SCN,
     Ra_MC4R, C_release,
     Ra_INSR, Ra_GHSR, Ra_LEPR
 )
@@ -15,9 +15,9 @@ from .hormones import (
 )
 
 Y0 = [
-    -40.0, -60.0, -60.0, -60.0, -60.0, -60.0,
-    0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-    0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+    -40.0, -60.0, -60.0, -60.0, -60.0, -60.0, -60.0,
+    0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+    0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
     0.0, 1.0,
     0.0, 0.0, 1.38,
     0.0, 0.01, 670.0, 79.0, 22.0,
@@ -25,9 +25,9 @@ Y0 = [
 ]
 
 STATE_NAMES = [
-    "V", "A", "P", "L", "S", "D",
-    "aKV", "aKA", "aKP", "aKL", "aKS", "aKD",
-    "aGLUP", "aGLUV", "GABAA", "GABAL", "GABAS", "aGLUD",
+    "V", "A", "P", "L", "S", "D", "N",
+    "aKV", "aKA", "aKP", "aKL", "aKS", "aKD", "aKN",
+    "aGLUP", "aGLUV", "GABAA", "GABAL", "GABAS", "aGLUD", "GABAN",
     "aOrexina", "Morexina",
     "alphaMSH", "AgRP", "AMC4R",
     "GI1", "GI2", "H1", "IN", "LP",
@@ -36,9 +36,9 @@ STATE_NAMES = [
 
 def make_ode(food_fn: Callable[[float], float]):
     def rhs(t: float, y: list) -> list:
-        (V, A, P, L, S, D,
-         aKV, aKA, aKP, aKL, aKS, aKD,
-         aGLUP, aGLUV, GABAA, GABAL, GABAS, aGLUD,
+        (V, A, P, L, S, D, N,
+         aKV, aKA, aKP, aKL, aKS, aKD, aKN,
+         aGLUP, aGLUV, GABAA, GABAL, GABAS, aGLUD, GABAN,
          aOrexina, Morexina,
          aMSH, AgRP, AMC4R,
          GI1, GI2, GH, IN, LP,
@@ -60,7 +60,7 @@ def make_ode(food_fn: Callable[[float], float]):
               - I_GHSR(A, AGHSR, -10.0)
               - I_LEPR(A, ALEPR, -90.0)
               - I_INSR(A, AINSR, -90.0, p.gINSRA)
-              - I_GLU(A, aGLUD))
+              - I_GLU_Trh(A, aGLUD))
 
         dP = (-I_leak(P)
               - I_Na(aNa_inf(P), P)
@@ -76,10 +76,15 @@ def make_ode(food_fn: Callable[[float], float]):
               - I_MC4R(L, AMC4R)
               + I_circadian(t))
 
+        dN = (-I_leak(N)
+              - I_Na(aNa_inf(N), N)
+              - I_K(aKN, N)
+              + I_tonic_SCN(t))
+
         dS = (-I_leak(S)
               - I_Na(aNa_inf(S), S)
               - I_K(aKS, S)
-              - I_circadian(t)
+              - I_GABA(S, GABAN)
               + p.I_tonic_S)
 
         dD = (-I_leak(D)
@@ -94,6 +99,7 @@ def make_ode(food_fn: Callable[[float], float]):
         daKL = (aK_inf(L) - aKL) / p.tauK
         daKS = (aK_inf(S) - aKS) / p.tauK
         daKD = (aK_inf(D) - aKD) / p.tauK
+        daKN = (aK_inf(N) - aKN) / p.tauK
 
         daGLUP = (aGLU_inf(P) - aGLUP) / p.tauGLU
         daGLUV = (aGLU_inf(V) - aGLUV) / p.tauGLU
@@ -101,6 +107,7 @@ def make_ode(food_fn: Callable[[float], float]):
         dGABAA = (aGLU_inf(A) - GABAA) / p.tauGABA
         dGABAL = (aGLU_inf(L) - GABAL) / p.tauGABA
         dGABAS = (aGLU_inf(S) - GABAS) / p.tauGABA
+        dGABAN = (aGLU_inf(N) - GABAN) / p.tauGABA
 
         s_L = aGLU_inf(L)
         daOrexina = (s_L * Morexina - aOrexina) / p.tauOREXIN
@@ -123,9 +130,9 @@ def make_ode(food_fn: Callable[[float], float]):
         dALEPR = Ra_LEPR(LP) / p.tauact_LEPR - ALEPR / p.tauinac_LEPR
 
         return [
-            dV, dA, dP, dL, dS, dD,
-            daKV, daKA, daKP, daKL, daKS, daKD,
-            daGLUP, daGLUV, dGABAA, dGABAL, dGABAS, daGLUD,
+            dV, dA, dP, dL, dS, dD, dN,
+            daKV, daKA, daKP, daKL, daKS, daKD, daKN,
+            daGLUP, daGLUV, dGABAA, dGABAL, dGABAS, daGLUD, dGABAN,
             daOrexina, dMorexina,
             daMSH, dAgRP, dAMC4R,
             dGI1, dGI2, dGH, dIN, dLP,

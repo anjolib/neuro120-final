@@ -113,3 +113,5 @@ Zalpha = _kk(0.16e-9, 0.9)
 
 I_tonic_S = 0.85
 I_tonic_D = 0.82
+
+gGLU_Trh = 0.15
