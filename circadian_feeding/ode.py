@@ -34,7 +34,8 @@ STATE_NAMES = [
     "AINSR", "AGHSR", "ALEPR",
 ]
 
-def make_ode(food_fn: Callable[[float], float]):
+def make_ode(food_fn: Callable[[float], float],
+             dmh_input: bool = True):
     def rhs(t: float, y: list) -> list:
         (V, A, P, L, S, D, N,
          aKV, aKA, aKP, aKL, aKS, aKD, aKN,
@@ -60,7 +61,7 @@ def make_ode(food_fn: Callable[[float], float]):
               - I_GHSR(A, AGHSR, -10.0)
               - I_LEPR(A, ALEPR, -90.0)
               - I_INSR(A, AINSR, -90.0, p.gINSRA)
-              - I_GLU_Trh(A, aGLUD))
+              - I_GLU_Trh(A, aGLUD) * dmh_input)
 
         dP = (-I_leak(P)
               - I_Na(aNa_inf(P), P)
