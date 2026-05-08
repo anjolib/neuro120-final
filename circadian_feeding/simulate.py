@@ -136,3 +136,9 @@ def simulate_GF():
     with open('simulation-GF-DMH_on.pkl', 'wb') as f:
         pickle.dump(res, f)
     return res
+
+def simulate_GF_old():
+    res = run(food_fn=lambda t: GF(t, num(2.1)), dmh_input=False)
+    with open('simulation-GF-DMH_off.pkl', 'wb') as f:
+        pickle.dump(res, f)
+    return res
