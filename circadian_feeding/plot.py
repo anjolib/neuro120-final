@@ -80,8 +80,6 @@ def plot_voltages(res: SimResult,
     Returns:
         pyplot figure containing voltage plots for each neuron
     """
-    if len(axes) != len(neurons):
-        raise Exception("axes and neurons must be of same length")
 
     mask = (res.t_h >= t_range[0]) & (res.t_h <= t_range[1])
     t = res.t_h[mask]
@@ -120,11 +118,9 @@ def plot_hormones(res: SimResult,
                   meal_spans: list = _MEAL_SPANS_72H,
                   t_range: (float) = (0, 24.0)):
     """Glucose, insulin, ghrelin, and leptin over 72 h."""
-    if len(axes) != len(hormones):
-        raise Exception("axes and hormones must be of same length")
 
     if len(hormones) == 1:
-        data, label, color = _hormone_specs(hormone, res)
+        data, label, color = _hormone_specs(hormones[0], res)
         axes.plot(res.t_h, data, color=color, lw=1.0)
         axes.set_ylabel(label, fontsize=9)
         _shade_meals(axes, meal_spans)
@@ -152,8 +148,6 @@ def plot_neuropeptides(res: SimResult,
                        meal_spans: list = _MEAL_SPANS_72H,
                        t_range: (float) = (0, 24.0)):
     """α-MSH, AgRP cleft concentrations and MC4R activation over 72 h."""
-    if len(axes) != len(peptides):
-        raise Exception("axes and peptides must be of same length")
 
     if len(peptides) == 1:
         data, label, color = _peptide_specs(peptides[0], res)
@@ -187,9 +181,8 @@ def plot_spike_counts(
     window_h: float = 0.5,
     peak_height: float = 0.0,
     peak_distance: int = 10,
+    zscore: bool = False
 ):
-    if len(axes) != len(neurons):
-        raise Exception("axes and neurons must be of same length")
 
     edges   = np.arange(t_range[0], t_range[1], window_h)
     centers = (edges[:-1] + edges[1:]) / 2
@@ -207,28 +200,42 @@ def plot_spike_counts(
                 counts.append(0)
         return counts
 
+    def _zscore(x):
+        x = np.array(x)
+        return (x - np.mean(x)) / (np.std(x) + 1e-8)
+
     if len(neurons) == 1:
-        data, label, color = _neuron_specs(neurons, res)
+        data, label, color = _neuron_specs(neurons[0], res)
         counts = _count(data)
-        axes.bar(centers, counts, width=window_h * 0.9, color=color, alpha=0.8)
-        axes.set_ylabel(f"{label}\n(spikes)", fontsize=9)
         axes.set_xlabel("Time (hours)")
         axes.set_xlim(t_range)
-        axes.set_ylim(bottom=0)
         _shade_meals(axes, meal_spans)
         _day_lines(axes)
+        if zscore:
+            counts = _zscore(counts)
+            axes.plot(centers, counts, color=color)
+            axes.set_ylabel(f"{label} (z-score)", fontsize=9)
+        else:
+            axes.set_ylim(bottom=0)
+            axes.bar(centers, counts, width=window_h * 0.9, color=color, alpha=0.8)
+            axes.set_ylabel(f"{label} (spikes)", fontsize=9)
         return axes
 
     for ax, neurons in zip(axes, neurons):
         data, label, color = _neuron_specs(neurons, res)
         counts = _count(data)
-        ax.bar(centers, counts, width=window_h * 0.9, color=color, alpha=0.8)
-        ax.set_ylabel(f"{label}\n(spikes)", fontsize=9)
         ax.set_xlabel("Time (hours)")
         ax.set_xlim(t_range)
-        ax.set_ylim(bottom=0)
         _shade_meals(ax, meal_spans)
         _day_lines(ax)
+        if zscore:
+            counts = _zscore(counts)
+            ax.plot(centers, counts, color=color)
+            ax.set_ylabel(f"{label} (z-score)", fontsize=9)
+        else:
+            ax.set_ylim(bottom=0)
+            ax.bar(centers, counts, width=window_h * 0.9, color=color, alpha=0.8)
+            ax.set_ylabel(f"{label} (spikes)", fontsize=9)
 
     return axes
 
