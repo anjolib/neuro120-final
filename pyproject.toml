@@ -1,5 +1,5 @@
 [project]
-name = "neuro120-final"
+name = "circadian_feeding"
 version = "0.1.0"
 description = "A minimal pyproject.toml"
 authors = [
