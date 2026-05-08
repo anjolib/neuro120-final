@@ -28,10 +28,14 @@
         let
           pythonEnv = python.withPackages (
             ps: project.renderers.withPackages { inherit python; } ps
-            ++ [ localPkg ]
           );
         in
-        pkgs.mkShell { packages = [ pythonEnv ]; };
+        pkgs.mkShell {
+          packages = [ pythonEnv ];
+          shellHook = ''
+            export PYTHONPATH="$PWD:$PYTHONPATH"
+          '';
+        };
       packages.${system}.default = localPkg;
     };
 }
