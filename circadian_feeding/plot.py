@@ -216,7 +216,6 @@ def plot_spike_counts(
             axes.plot(centers, counts, color=color)
             axes.set_ylabel(f"{label} (z-score)", fontsize=9)
         else:
-            axes.set_ylim(bottom=0)
             axes.bar(centers, counts, width=window_h * 0.9, color=color, alpha=0.8)
             axes.set_ylabel(f"{label} (spikes)", fontsize=9)
         return axes
@@ -233,7 +232,6 @@ def plot_spike_counts(
             ax.plot(centers, counts, color=color)
             ax.set_ylabel(f"{label} (z-score)", fontsize=9)
         else:
-            ax.set_ylim(bottom=0)
             ax.bar(centers, counts, width=window_h * 0.9, color=color, alpha=0.8)
             ax.set_ylabel(f"{label} (spikes)", fontsize=9)
 
