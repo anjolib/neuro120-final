@@ -1,7 +1,7 @@
 [project]
 name = "circadian_feeding"
 version = "0.1.0"
-description = "A minimal pyproject.toml"
+description = "Neuro 120 final project"
 authors = [
   {name = "Antonino Libarnes"},
   {name = "Soren James"},
@@ -15,3 +15,6 @@ dependencies = [
   "scipy",
   "pandas",
 ]
+
+[tool.setuptools]
+packages = ["circadian_feeding"]

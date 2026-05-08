@@ -1,8 +1,9 @@
+
 {
-  description = "Neuro 120 final project";
+  description = "Development flake for Neuro 120 project";
 
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    nixpkgs.url = "github:nixos/nixpkgs/nixpkgs-unstable";
     pyproject-nix = {
       url = "github:pyproject-nix/pyproject.nix";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -12,35 +13,26 @@
   outputs =
     { nixpkgs, pyproject-nix, ... }:
     let
-      inherit (nixpkgs) lib;
-      forAllSystems = lib.genAttrs lib.systems.flakeExposed;
-
       project = pyproject-nix.lib.project.loadPyproject {
         projectRoot = ./.;
       };
-
-      pythonAttr = "python312";
+      pkgs = nixpkgs.legacyPackages.${system};
+      python = pkgs.python312;
+      system = "aarch64-darwin";
+      localPkg = python.pkgs.buildPythonPackage (
+        project.renderers.buildPythonPackage { inherit python; }
+      );
     in
     {
-      devShells = forAllSystems (system: {
-        default =
-          let
-            pkgs = nixpkgs.legacyPackages.${system};
-            python = pkgs.${pythonAttr};
-            pythonEnv = python.withPackages (project.renderers.withPackages { inherit python; });
-          in
-          pkgs.mkShell { packages = [ pythonEnv ]; };
-      });
-
-      packages = forAllSystems (
-        system:
+      devShells.${system}.default =
         let
-          pkgs = nixpkgs.legacyPackages.${system};
-          python = pkgs.${pythonAttr};
+          pythonEnv = python.withPackages (
+            ps: project.renderers.withPackages { inherit python; } ps
+            ++ [ localPkg ]
+          );
         in
-        {
-          default = python.pkgs.buildPythonPackage (project.renderers.buildPythonPackage { inherit python; });
-        }
-      );
+        pkgs.mkShell { packages = [ pythonEnv ]; };
+      packages.${system}.default = localPkg;
     };
 }
+
