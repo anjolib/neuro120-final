@@ -60,7 +60,7 @@ def make_ode(food_fn: Callable[[float], float]):
               - I_GHSR(A, AGHSR, -10.0)
               - I_LEPR(A, ALEPR, -90.0)
               - I_INSR(A, AINSR, -90.0, p.gINSRA)
-              - I_GLU_Trh(A, aGLUD))
+              - I_GLU_Trh(A, aGLUD * p.LESION_DA))
 
         dP = (-I_leak(P)
               - I_Na(aNa_inf(P), P)
@@ -90,7 +90,7 @@ def make_ode(food_fn: Callable[[float], float]):
         dD = (-I_leak(D)
               - I_Na(aNa_inf(D), D)
               - I_K(aKD, D)
-              - I_GABA(D, GABAS)
+              - I_GABA(D, GABAS * p.LESION_SD)
               + p.I_tonic_D)
 
         daKV = (aK_inf(V) - aKV) / p.tauK
