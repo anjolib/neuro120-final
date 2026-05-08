@@ -2,30 +2,45 @@
   description = "Neuro 120 final project";
 
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-25.11-darwin";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    pyproject-nix = {
+      url = "github:pyproject-nix/pyproject.nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
-  outputs = inputs @ { self, ... }:
+  outputs =
+    { nixpkgs, pyproject-nix, ... }:
     let
-      system = "aarch64-darwin";
-      pkgs = import inputs.nixpkgs { inherit system; };
-      python = pkgs.python313;
+      inherit (nixpkgs) lib;
+      forAllSystems = lib.genAttrs lib.systems.flakeExposed;
+
+      project = pyproject-nix.lib.project.loadPyproject {
+        projectRoot = ./.;
+      };
+
+      pythonAttr = "python312";
     in
     {
-      devShells.${system}.default = pkgs.mkShellNoCC {
-        packages = [
-          (python.withPackages (ps: with ps; [
-            pip
-            jupyter
-            jupyterlab-vim
-            ipywidgets
+      devShells = forAllSystems (system: {
+        default =
+          let
+            pkgs = nixpkgs.legacyPackages.${system};
+            python = pkgs.${pythonAttr};
+            pythonEnv = python.withPackages (project.renderers.withPackages { inherit python; });
+          in
+          pkgs.mkShell { packages = [ pythonEnv ]; };
+      });
 
-            matplotlib
-            numpy
-            scipy
-            pandas
-          ]))
-        ];
-      };
+      packages = forAllSystems (
+        system:
+        let
+          pkgs = nixpkgs.legacyPackages.${system};
+          python = pkgs.${pythonAttr};
+        in
+        {
+          default = python.pkgs.buildPythonPackage (project.renderers.buildPythonPackage { inherit python; });
+        }
+      );
     };
 }
