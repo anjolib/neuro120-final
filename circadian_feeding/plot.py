@@ -1,12 +1,52 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.signal import find_peaks
+from typing import Callable
 
 from .simulate import SimResult
-from .params import gen, break_, lun, din
+from .params import num, gen, break_, lun, din
 from .currents import I_circadian
 from .food import TRE
 
+def _neuron_specs(neuron, res):
+    match neuron:
+        case "S":
+            return (res.S, "SPZ", "blue")
+        case "D":
+            return (res.D, "DMH", "red")
+        case "V":
+            return (res.V, "PVH", "orange")
+        case "A":
+            return (res.A, "AgRP", "tomato")
+        case "P":
+            return (res.P, "Pomc", "seagreen")
+        case "L":
+            return (res.L, "LHA", "darkorange")
+    return None
+
+def _hormone_specs(hormone, res):
+    match hormone:
+        case "GI1":
+            return (res.GI1, "GI1 (L)", "darkgreen")
+        case "GI2":
+            return (res.GI2, "GI2 (L)", "darkgreen")
+        case "IN":
+            return (res.IN, "Insulin (pM)", "steelblue")
+        case "H1":
+            return (res.H1, "Ghrelin (pg/mL)", "tomato")
+        case "LP":
+            return (res.LP, "Leptin plasma (ng/mL)", "purple")
+    return None
+
+def _peptide_specs(peptide, res):
+    match peptide:
+        case "AgRP":
+            return (res.AgRP*1e8, "AgRP (×10⁻⁸ M)", "blue")
+        case "aMSH":
+            return (res.alphaMSH*1e9, "α-MSH (nM)", "green")
+        case "AMC4R":
+            return (res.AMC4R, "MC4R activation", "red")
+    return None
 
 _MEAL_SPANS_72H = [
     (gen(8) /3600, break_(8) /3600),  (gen(13)/3600, lun(13)/3600),
@@ -25,127 +65,133 @@ def _day_lines(ax, days=(24, 48)):
     for d in days:
         ax.axvline(d, color="gray", lw=0.7, ls="--", alpha=0.5)
 
-def plot_voltages(res: SimResult, hours: float = 24.0) -> plt.Figure:
-    mask = res.t_h <= hours
+def plot_voltages(res: SimResult,
+                  axes,
+                  neurons: list = ["S", "D"],
+                  meal_spans: list = _MEAL_SPANS_72H,
+                  t_range: (float) = (0, 24.0)):
+    """Plots voltages of neurons over time.
+
+    Args:
+        res: SimResult object containing results
+        neurons: list of neurons to plot by variable name
+        t_range: time range to plot (initial, final)
+
+    Returns:
+        pyplot figure containing voltage plots for each neuron
+    """
+    if len(axes) != len(neurons):
+        raise Exception("axes and neurons must be of same length")
+
+    mask = (res.t_h >= t_range[0]) & (res.t_h <= t_range[1])
     t = res.t_h[mask]
 
-    meal_spans_24h = [
-        (gen(8)/3600,  break_(8)/3600),
-        (gen(13)/3600, lun(13)/3600),
-        (gen(17)/3600, din(17)/3600),
-    ]
+    if len(neurons) == 1:
+        data, label, color = _neuron_specs(neurons[0], res);
+        data = data[mask]
+        axes.plot(t, data, color=color, lw=0.5)
+        axes.set_ylabel(f"{label}\n(mV)", fontsize=9)
+        axes.set_ylim(-100, 70)
+        axes.set_xlim(t_range)
+        axes.axhline(0, color="gray", lw=0.4, ls="--")
+        _shade_meals(axes, meal_spans)
+        _day_lines(axes)
+        axes.set_xlabel("Time (hours)")
+        plt.tight_layout()
+        return axes
 
-    specs = [
-        (res.S[mask], "SVZ (S)", "mediumpurple"),
-        (res.V[mask], "PVH  (V)",  "steelblue"),
-        (res.A[mask], "AgRP (A)",  "tomato"),
-        (res.P[mask], "POMC (P)",  "seagreen"),
-        (res.L[mask], "LHA  (L)",  "darkorange"),
-    ]
-
-    fig, axes = plt.subplots(4, 1, figsize=(14, 8), sharex=True)
-    fig.suptitle(f"Membrane potentials – first {hours:.0f} h (TRE diet)", fontsize=12)
-
-    for ax, (data, label, color) in zip(axes, specs):
+    for ax, neuron in zip(axes, neurons):
+        data, label, color = _neuron_specs(neuron, res)
+        data = data[mask]
         ax.plot(t, data, color=color, lw=0.5)
         ax.set_ylabel(f"{label}\n(mV)", fontsize=9)
         ax.set_ylim(-100, 70)
+        ax.set_xlim(t_range)
         ax.axhline(0, color="gray", lw=0.4, ls="--")
-        _shade_meals(ax, meal_spans_24h)
+        _shade_meals(ax, meal_spans)
+        _day_lines(ax)
+        ax.set_xlabel("Time (hours)")
 
-    axes[-1].set_xlabel("Time (hours)")
-    plt.tight_layout()
-    return fig
+    return axes
 
-def plot_hormones(res: SimResult) -> plt.Figure:
+def plot_hormones(res: SimResult,
+                  axes,
+                  hormones: list = ["GI2", "IN", "H1", "LP"],
+                  meal_spans: list = _MEAL_SPANS_72H,
+                  t_range: (float) = (0, 24.0)):
     """Glucose, insulin, ghrelin, and leptin over 72 h."""
-    specs = [
-        (res.GI2, "Plasma glucose (mmol/L)", "darkgreen"),
-        (res.IN,  "Insulin (pM)",            "steelblue"),
-        (res.H1,  "Ghrelin (pg/mL)",         "tomato"),
-        (res.LP,  "Leptin plasma (ng/mL)",   "purple"),
-    ]
+    if len(axes) != len(hormones):
+        raise Exception("axes and hormones must be of same length")
 
-    fig, axes = plt.subplots(4, 1, figsize=(14, 9), sharex=True)
-    fig.suptitle("Hormone dynamics – 72 h  (gold = meal window)", fontsize=12)
+    if len(hormones) == 1:
+        data, label, color = _hormone_specs(hormone, res)
+        axes.plot(res.t_h, data, color=color, lw=1.0)
+        axes.set_ylabel(label, fontsize=9)
+        _shade_meals(axes, meal_spans)
+        _day_lines(axes)
+        axes.set_xlabel("Time (hours)")
+        axes.set_xlim(0, 72)
+        axes.set_ylim(bottom=0)
+        return axes
 
-    for ax, (data, label, color) in zip(axes, specs):
+    for ax, hormone in zip(axes, hormones):
+        data, label, color = _hormone_specs(hormone, res)
         ax.plot(res.t_h, data, color=color, lw=1.0)
         ax.set_ylabel(label, fontsize=9)
-        _shade_meals(ax)
+        _shade_meals(ax, meal_spans)
         _day_lines(ax)
+        ax.set_xlabel("Time (hours)")
+        ax.set_xlim(0, 72)
+        ax.set_ylim(bottom=0)
 
-    axes[-1].set_xlabel("Time (hours)")
-    axes[-1].set_xlim(0, 72)
-    plt.tight_layout()
-    return fig
+    return axes
 
-def plot_neuropeptides(res: SimResult) -> plt.Figure:
+def plot_neuropeptides(res: SimResult,
+                       axes,
+                       peptides: list = ["aMSH", "AgRP", "AMC4R"],
+                       meal_spans: list = _MEAL_SPANS_72H,
+                       t_range: (float) = (0, 24.0)):
     """α-MSH, AgRP cleft concentrations and MC4R activation over 72 h."""
-    fig, axes = plt.subplots(3, 1, figsize=(14, 7), sharex=True)
-    fig.suptitle("Neuropeptide and MC4R dynamics – 72 h", fontsize=12)
+    if len(axes) != len(peptides):
+        raise Exception("axes and peptides must be of same length")
 
-    axes[0].plot(res.t_h, res.alphaMSH * 1e9, color="darkorchid", lw=1)
-    axes[0].set_ylabel("α-MSH (nM)", fontsize=9)
+    if len(peptides) == 1:
+        data, label, color = _peptide_specs(peptides[0], res)
+        axes.plot(res.t_h, data, color=color, lw=1)
+        axes.set_ylabel(label, fontsize=9)
+        _shade_meals(axes, meal_spans)
+        _day_lines(axes)
+        axes.set_xlabel("Time (hours)")
+        axes.set_xlim(t_range)
+        axes.set_ylim(bottom=0)
+        return axes
 
-    axes[1].plot(res.t_h, res.AgRP * 1e8, color="tomato", lw=1)
-    axes[1].set_ylabel("AgRP (×10⁻⁸ M)", fontsize=9)
-
-    axes[2].plot(res.t_h, res.AMC4R, color="navy", lw=1)
-    axes[2].set_ylabel("MC4R activation", fontsize=9)
-
-    for ax in axes:
-        _shade_meals(ax)
+    for ax, peptide in zip(axes, peptides):
+        data, label, color = _peptide_specs(peptide, res)
+        ax.plot(res.t_h, data, color=color, lw=1)
+        ax.set_ylabel(label, fontsize=9)
+        _shade_meals(ax, meal_spans)
         _day_lines(ax)
+        ax.set_xlabel("Time (hours)")
+        ax.set_xlim(t_range)
+        ax.set_ylim(bottom=0)
 
-    axes[-1].set_xlabel("Time (hours)")
-    axes[-1].set_xlim(0, 72)
-    plt.tight_layout()
-    return fig
-
-
-def plot_synaptic(res: SimResult) -> plt.Figure:
-    """Orexin, GABA, GLU gating and hormone receptor activations over 72 h."""
-    fig, axes = plt.subplots(4, 1, figsize=(14, 9), sharex=True)
-    fig.suptitle("Synaptic gating, orexin and receptor activations – 72 h", fontsize=12)
-
-    axes[0].plot(res.t_h, res.aOrexina, label="aOrexin (gating)", color="darkorange")
-    axes[0].plot(res.t_h, res.Morexina, label="Morexin (mediator)", color="orange", ls="--")
-    axes[0].set_ylabel("Orexin", fontsize=9)
-    axes[0].legend(fontsize=8, loc="upper right")
-
-    axes[1].plot(res.t_h, res.GABAA, label="GABA from AgRP", color="tomato")
-    axes[1].plot(res.t_h, res.GABAL, label="GABA from LHA",  color="darkred", ls="--")
-    axes[1].set_ylabel("GABA gating", fontsize=9)
-    axes[1].legend(fontsize=8, loc="upper right")
-
-    axes[2].plot(res.t_h, res.aGLUP, label="GLU POMC→PVH", color="steelblue")
-    axes[2].plot(res.t_h, res.aGLUV, label="GLU PVH→AgRP", color="blue", ls="--")
-    axes[2].set_ylabel("GLU gating", fontsize=9)
-    axes[2].legend(fontsize=8, loc="upper right")
-
-    axes[3].plot(res.t_h, res.AINSR, label="AINSR (insulin)",  color="purple")
-    axes[3].plot(res.t_h, res.AGHSR, label="AGHSR (ghrelin)", color="seagreen")
-    axes[3].plot(res.t_h, res.ALEPR, label="ALEPR (leptin)",   color="teal")
-    axes[3].set_ylabel("Receptor\nactivation", fontsize=9)
-    axes[3].legend(fontsize=8, loc="upper right")
-
-    for ax in axes:
-        _day_lines(ax)
-
-    axes[-1].set_xlabel("Time (hours)")
-    axes[-1].set_xlim(0, 72)
-    plt.tight_layout()
-    return fig
+    return axes
 
 def plot_spike_counts(
     res: SimResult,
+    axes,
+    neurons: list = ["S", "D"],
+    meal_spans: list = _MEAL_SPANS_72H,
+    t_range: (float) = (0, 24.0),
     window_h: float = 0.5,
-    hours: float = 24.0,
     peak_height: float = 0.0,
     peak_distance: int = 10,
-) -> plt.Figure:
-    edges   = np.arange(0.0, hours + window_h, window_h)
+):
+    if len(axes) != len(neurons):
+        raise Exception("axes and neurons must be of same length")
+
+    edges   = np.arange(t_range[0], t_range[1], window_h)
     centers = (edges[:-1] + edges[1:]) / 2
 
     def _count(voltage):
@@ -161,51 +207,54 @@ def plot_spike_counts(
                 counts.append(0)
         return counts
 
-    specs = [
-        (_count(res.S),"SVZ", "mediumpurple"),
-        (_count(res.V), "PVH",  "steelblue"),
-        (_count(res.A), "AgRP", "tomato"),
-        (_count(res.P), "POMC", "seagreen"),
-        (_count(res.L), "LHA",  "darkorange"),
-    ]
+    if len(neurons) == 1:
+        data, label, color = _neuron_specs(neurons, res)
+        counts = _count(data)
+        axes.bar(centers, counts, width=window_h * 0.9, color=color, alpha=0.8)
+        axes.set_ylabel(f"{label}\n(spikes)", fontsize=9)
+        axes.set_xlabel("Time (hours)")
+        axes.set_xlim(t_range)
+        axes.set_ylim(bottom=0)
+        _shade_meals(axes, meal_spans)
+        _day_lines(axes)
+        return axes
 
-    fig, axes = plt.subplots(5, 1, figsize=(12, 7), sharex=True)
-    fig.suptitle(f"Firing rate (spikes / {window_h*60:.0f}-min window) – first {hours:.0f} h",
-                 fontsize=12)
-
-    for ax, (counts, label, color) in zip(axes, specs):
+    for ax, neurons in zip(axes, neurons):
+        data, label, color = _neuron_specs(neurons, res)
+        counts = _count(data)
         ax.bar(centers, counts, width=window_h * 0.9, color=color, alpha=0.8)
         ax.set_ylabel(f"{label}\n(spikes)", fontsize=9)
+        ax.set_xlabel("Time (hours)")
+        ax.set_xlim(t_range)
+        ax.set_ylim(bottom=0)
+        _shade_meals(ax, meal_spans)
+        _day_lines(ax)
 
-    axes[-1].set_xlabel("Time (hours)")
-    axes[-1].set_xlim(0, hours)
-    plt.tight_layout()
-    return fig
+    return axes
 
-
-def plot_inputs(hours: float = 24.0, food_rate: float = 2.1) -> plt.Figure:
+def plot_inputs(axes,
+                food_fn: Callable[[float], float],
+                food_rate: float = 2.1,
+                t_range: (float) = (0, 24.0)):
     """Circadian signal and TRE food pattern over `hours` hours."""
-    t_s = np.linspace(0, gen(hours), 10_000)
+    t_s = np.linspace(gen(t_range[0]), gen(t_range[1]), 10000)
     t_h = t_s / 3600.0
 
     from .params import num
     circ = I_circadian(t_s, wc=0.000073, Ac=1.0)
-    food = np.array([TRE(ti, food_rate) for ti in t_s])
+    food = np.array([food_fn(ti, food_rate) for ti in t_s])
 
-    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(12, 5), sharex=True)
-    fig.suptitle(f"Input signals – {hours:.0f} h", fontsize=12)
+    axes[0].fill_between(t_h, circ, color="goldenrod", lw=1.5, alpha=0.5)
+    axes[0].axhline(1, color="gray", lw=0.5, ls="--")
+    axes[0].set_ylabel("Circadian signal", fontsize=9)
+    axes[0].set_ylim(bottom=0)
 
-    ax1.plot(t_h, circ, color="goldenrod", lw=1.5)
-    ax1.axhline(1, color="gray", lw=0.5, ls="--")
-    ax1.set_ylabel("Circadian signal\n(normalised)", fontsize=9)
+    axes[1].fill_between(t_h, food, color="sienna", alpha=0.7)
+    axes[1].set_ylabel("Food intake (mmol/s)", fontsize=9)
+    axes[1].set_xlabel("Time (hours)")
+    axes[1].set_ylim(bottom=0)
 
-    ax2.fill_between(t_h, food, color="sienna", alpha=0.7)
-    ax2.set_ylabel("Food intake rate\n(TRE, mmol/s)", fontsize=9)
-    ax2.set_xlabel("Time (hours)")
-
-    plt.tight_layout()
-    return fig
-
+    return axes
 
 def plot_all(res: SimResult, save_dir: str | None = None) -> list[plt.Figure]:
     import os
