@@ -1,7 +1,17 @@
 import numpy as np
 from dataclasses import dataclass, field
 from typing import Callable
+from pathlib import Path
 import pickle
+
+_OUTPUTS = Path(__file__).parent.parent / "outputs"
+
+def _save(res, name: str) -> Path:
+    _OUTPUTS.mkdir(exist_ok=True)
+    path = _OUTPUTS / f"{name}.pkl"
+    with open(path, "wb") as f:
+        pickle.dump(res, f)
+    return path
 
 from scipy.integrate import solve_ivp
 
@@ -121,24 +131,20 @@ def run(
 
 def simulate_replication():
     res = run(food_fn=lambda t: TRE(t, num(2.1)), dmh_input=False)
-    with open('replication-TRE-DMH_off.pkl', 'wb') as f:
-        pickle.dump(res, f)
+    _save(res, 'replication-TRE-DMH_off')
     return res
 
 def simulate_TRE():
     res = run(food_fn=lambda t: TRE(t, num(2.1)), dmh_input=True)
-    with open('simulation-TRE-DMH_on.pkl', 'wb') as f:
-        pickle.dump(res, f)
+    _save(res, 'simulation-TRE-DMH_on')
     return res
 
 def simulate_GF():
     res = run(food_fn=lambda t: GF(t, num(2.1)), dmh_input=True)
-    with open('simulation-GF-DMH_on.pkl', 'wb') as f:
-        pickle.dump(res, f)
+    _save(res, 'simulation-GF-DMH_on')
     return res
 
 def simulate_GF_old():
     res = run(food_fn=lambda t: GF(t, num(2.1)), dmh_input=False)
-    with open('simulation-GF-DMH_off.pkl', 'wb') as f:
-        pickle.dump(res, f)
+    _save(res, 'simulation-GF-DMH_off')
     return res
