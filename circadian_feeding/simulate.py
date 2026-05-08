@@ -1,11 +1,14 @@
 import numpy as np
 from dataclasses import dataclass, field
 from typing import Callable
+import pickle
 
 from scipy.integrate import solve_ivp
 
 from . import params as p
 from .ode import make_ode, Y0, STATE_NAMES
+from .food import TRE, GF
+from .params import num
 
 @dataclass
 class SimResult:
@@ -90,6 +93,7 @@ def run(
     rtol: float = 1e-6,
     atol: float = 1e-9,
     max_step: float = 1.0,
+    dmh_input: bool = True
 ) -> SimResult:
     if y0 is None:
         y0 = Y0
@@ -97,7 +101,7 @@ def run(
     t_end  = p.gen(duration_h)
     t_eval = np.arange(0.0, t_end, dt)
 
-    rhs = make_ode(food_fn)
+    rhs = make_ode(food_fn, dmh_input)
 
     sol = solve_ivp(
         rhs,
@@ -115,3 +119,20 @@ def run(
 
     return SimResult(t_s=sol.t, t_h=sol.t / 3600.0, y=sol.y)
 
+def simulate_replication():
+    res = run(food_fn=lambda t: TRE(t, num(2.1)), dmh_input=False)
+    with open('replication-TRE-DMH_off.pkl', 'wb') as f:
+        pickle.dump(res, f)
+    return res
+
+def simulate_TRE():
+    res = run(food_fn=lambda t: TRE(t, num(2.1)), dmh_input=True)
+    with open('simulation-TRE-DMH_on.pkl', 'wb') as f:
+        pickle.dump(res, f)
+    return res
+
+def simulate_GF():
+    res = run(food_fn=lambda t: GF(t, num(2.1)), dmh_input=True)
+    with open('simulation-GF-DMH_on.pkl', 'wb') as f:
+        pickle.dump(res, f)
+    return res
