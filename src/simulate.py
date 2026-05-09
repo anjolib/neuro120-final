@@ -85,11 +85,11 @@ class SimResult:
 def run(
     food_fn: Callable[[float], float],
     duration_h: float = 72.0,
-    dt: float = 0.1,
+    dt: float = 1.0,
     y0: list | None = None,
-    rtol: float = 1e-6,
-    atol: float = 1e-9,
-    max_step: float = 1.0,
+    rtol: float = 1e-4,
+    atol: float = 1e-7,
+    max_step: float = np.inf,
 ) -> SimResult:
     if y0 is None:
         y0 = Y0

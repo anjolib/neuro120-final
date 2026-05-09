@@ -61,6 +61,9 @@ def make_ode(food_fn: Callable[[float], float]):
               - I_LEPR(A, ALEPR, -90.0)
               - I_INSR(A, AINSR, -90.0, p.gINSRA)
               - I_GLU_Trh(A, aGLUD * p.LESION_DA))
+        
+        if getattr(p, "DIRECT_SCN_TO_AGRP", False):                                                                                                
+            dA = dA + I_circadian(t) 
 
         dP = (-I_leak(P)
               - I_Na(aNa_inf(P), P)

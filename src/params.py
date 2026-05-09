@@ -118,3 +118,4 @@ gGLU_Trh = 0.5 # CHANGING
 
 LESION_SD = 1.0                                                                                                                                               
 LESION_DA = 1.0 
+DIRECT_SCN_TO_AGRP = False
