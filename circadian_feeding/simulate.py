@@ -17,7 +17,7 @@ from scipy.integrate import solve_ivp
 
 from . import params as p
 from .ode import make_ode, Y0, STATE_NAMES
-from .food import TRE, GF
+from .food import TRE, GF, TRE_3_7, TRE_18_22, STANDARD, FAST, SFS
 from .params import num
 
 @dataclass
@@ -148,3 +148,34 @@ def simulate_GF_old():
     res = run(food_fn=lambda t: GF(t, num(2.1)), dmh_input=False)
     _save(res, 'simulation-GF-DMH_off')
     return res
+
+def simulate_TRE_18_22():
+    res = run(food_fn=lambda t: TRE_18_22(t, num(2.1)), dmh_input=True)
+    _save(res, 'simulation-TRE_18_22-DMH_on')
+    return res
+
+def simulate_TRE_3_7():
+    res = run(food_fn=lambda t: TRE_3_7(t, num(2.1)), dmh_input=True)
+    _save(res, 'simulation-TRE_3_7-DMH_on')
+    return res
+
+def simulate_TRE_3_7_fast():
+    res = run(food_fn=lambda t: TRE_3_7(t, num(2.1)), dmh_input=True, duration_h=144.0)
+    _save(res, 'simulation-TRE_3_7_fast-DMH_on')
+    return res
+
+def simulate_standard_fast():
+    res = run(food_fn=lambda t: STANDARD(t, num(2.1)), dmh_input=True, duration_h=144.0)
+    _save(res, 'simulation-STANDARD_fast-DMH_on')
+    return res
+
+def simulate_fast():
+    res = run(food_fn=lambda t: FAST(t, num(2.1)), dmh_input=True)
+    _save(res, 'simulation-FAST-DMH_on')
+    return res
+
+def simulate_sfs():
+    res = run(food_fn=lambda t: SFS(t, num(2.1)), dmh_input=True, duration_h=144.0)
+    _save(res, 'simulation-SFS-DMH_on')
+    return res
+

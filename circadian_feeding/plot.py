@@ -57,13 +57,15 @@ _MEAL_SPANS_72H = [
     (gen(65)/3600, din(65) /3600),
 ]
 
-def _shade_meals(ax, meal_spans=_MEAL_SPANS_72H, alpha=0.13, color="gold"):
+def _shade_meals(ax, meal_spans=_MEAL_SPANS_72H, alpha=0.2, color="gold"):
     for ms, me in meal_spans:
         ax.axvspan(ms, me, alpha=alpha, color=color)
 
-def _day_lines(ax, days=(24, 48)):
-    for d in days:
-        ax.axvline(d, color="gray", lw=0.7, ls="--", alpha=0.5)
+def _day_lines(ax):
+    nights = [(12,24), (36,48), (60,72),
+              (84,96), (108,120), (132,144)]
+    for dusk, dawn in nights:
+        ax.axvspan(dusk, dawn, alpha=0.13, color="gray")
 
 def plot_voltages(res: SimResult,
                   axes,

@@ -1,7 +1,56 @@
 from .params import gen, break_, lun, din
 
+def FAST(t: float, r: float) -> float:
+    return 0.0
+
+def SFS(t: float, r: float) -> float:
+    windows = [
+            (gen(12), gen(24)),
+            (gen(36), gen(48)),
+            (gen(60), gen(72)),
+            (gen(108), gen(120)),
+            (gen(132), gen(144))
+    ];
+    for t0, t1 in windows:
+        if t0 < t < t1:
+            return r * 5416.0 / 43200.0
+    return 0.0
+
+def STANDARD(t: float, r: float) -> float:
+    windows = [
+            (gen(12), gen(24)),
+            (gen(36), gen(48)),
+            (gen(60), gen(72))
+    ];
+    for t0, t1 in windows:
+        if t0 < t < t1:
+            return r * 5416.0 / 43200.0
+    return 0.0
+
 def GF(t: float, r: float) -> float:
     return r * 5416.0 / 86400.0
+
+def TRE_3_7(t: float, r: float) -> float:
+    windows = [
+            (gen(3), gen(7)),
+            (gen(27), gen(31)),
+            (gen(51), gen(55))
+    ];
+    for t0, t1 in windows:
+        if t0 < t < t1:
+            return r * 5416.0 / 14400.0
+    return 0.0
+
+def TRE_18_22(t: float, r: float) -> float:
+    windows = [
+            (gen(18), gen(22)),
+            (gen(42), gen(46)),
+            (gen(66), gen(70))
+    ];
+    for t0, t1 in windows:
+        if t0 < t < t1:
+            return r * 5416.0 / 14400.0
+    return 0.0
 
 def TRE(t: float, r: float) -> float:
     windows = [
@@ -45,7 +94,12 @@ def IFI(t: float, r: float) -> float:
 SCHEDULES = {
     "GF": GF,
     "TRE": TRE,
+    "TRE_3_7": TRE_3_7,
+    "TRE_18_22": TRE_18_22,
     "CD":  CD,
     "IFI": IFI,
+    "STANDARD": STANDARD,
+    "FAST": FAST,
+    "SFS": SFS,
 }
 
